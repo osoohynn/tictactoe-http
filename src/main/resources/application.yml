@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: 'jdbc:mysql://localhost:3306/defalt'
+    username: root
+    password: a1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 3333
+  jwt:
+    prefix: 'Bearer '
+    header: 'Authorization'
+    issuer: 'gaon'
+    secret-key: 'dnfjksdnfjeuijfnidsojviodsjfeiowrnfsadcsklMe23o4209dfidjns'
+    access-token-expiration: 360000
+    refresh-token-expiration: 8640000
