@@ -16,6 +16,6 @@ spring:
     prefix: 'Bearer '
     header: 'Authorization'
     issuer: 'jwt'
-    secret-key: 'dnfjksdnfjeuijfnidsojviodsjfeiowrnfsadcsklMe23o4209dfidsdjns'
+    secret-key: 'dnfjksdnfjeuijfnidsojviodsjfeiowrnfsadcsklMe23o4209dfidsdjnsefmdklwfowekfioewjsdkfnds'
     access-token-expiration: 360000
     refresh-token-expiration: 8640000
