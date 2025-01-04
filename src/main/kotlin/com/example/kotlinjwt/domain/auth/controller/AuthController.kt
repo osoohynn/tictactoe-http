@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authService: AuthService
 ) {
-    @PostMapping("/signup")
+    @PostMapping("/sign-up")
     fun signup(@RequestBody request: SignUpRequest) = authService.signup(request)
 
-    @PostMapping("/login")
+    @PostMapping("/sign-in")
     fun login(@RequestBody request: LoginRequest) = authService.login(request)
 
     @PostMapping("/reissue")
