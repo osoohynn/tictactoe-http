@@ -1,6 +1,7 @@
 package com.example.kotlinjwt.domain.user.domain.entity
 
 import com.example.kotlinjwt.domain.user.domain.enums.UserRole
+import com.example.kotlinjwt.global.common.BaseEntity
 import jakarta.persistence.Entity
 import jakarta.persistence.*
 import jakarta.persistence.Table
@@ -22,4 +23,4 @@ class User (
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     val role: UserRole
-)
+) : BaseEntity()
