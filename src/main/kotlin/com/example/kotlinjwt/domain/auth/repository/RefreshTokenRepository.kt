@@ -13,7 +13,7 @@ class RefreshTokenRepository(
 ) {
     fun setRefreshToken(username: String, refreshToken: String) {
         redisTemplate.opsForValue()
-            .set(username, refreshToken, jwtProperties.refreshTokenExpiration, TimeUnit.MILLISECONDS)
+            .set(username, refreshToken, jwtProperties.refreshExp, TimeUnit.MILLISECONDS)
     }
 
     fun getRefreshToken(username: String): String? {

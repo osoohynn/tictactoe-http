@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/dave
+    url: ${DB_URL}
     username: root
-    password: a1234
+    password: ${DB_PW}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -11,9 +11,9 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: 3333
+      password: ${REDIS_PW}
   jwt:
     issuer: 'jwt'
-    secret-key: 'dnfjksdnfjeuijfnidsojviodsjfeiowrnfsadcsklMe23o4209dfidsdjnsefmdklwfowekfioewjsdkfnds'
-    access-token-expiration: 360000
-    refresh-token-expiration: 8640000
+    secret-key: ${SECRET_KEY}
+    access-exp: 360000
+    refresh-exp: 8640000

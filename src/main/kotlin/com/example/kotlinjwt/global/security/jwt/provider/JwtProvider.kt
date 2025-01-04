@@ -40,7 +40,7 @@ class JwtProvider(
             .subject(user.username)
             .issuedAt(now)
             .issuer(jwtProperties.issuer)
-            .expiration(Date(now.time + jwtProperties.accessTokenExpiration))
+            .expiration(Date(now.time + jwtProperties.accessExp))
             .signWith(key)
             .compact()
 
@@ -51,7 +51,7 @@ class JwtProvider(
             .subject(user.username)
             .issuedAt(now)
             .issuer(jwtProperties.issuer)
-            .expiration(Date(now.time + jwtProperties.refreshTokenExpiration))
+            .expiration(Date(now.time + jwtProperties.refreshExp))
             .signWith(key)
             .compact()
 
