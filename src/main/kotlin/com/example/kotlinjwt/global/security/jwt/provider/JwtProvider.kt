@@ -71,7 +71,7 @@ class JwtProvider(
     }
 
     fun extractToken(request: HttpServletRequest) =
-        request.getHeader(jwtProperties.header)?.removePrefix(jwtProperties.prefix)
+        request.getHeader("Authorization")?.removePrefix("Bearer ")
 
     fun getType(token: String) = JwtType.valueOf(
         Jwts.parser()

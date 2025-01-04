@@ -13,8 +13,6 @@ spring:
       port: 6379
       password: 3333
   jwt:
-    prefix: 'Bearer '
-    header: 'Authorization'
     issuer: 'jwt'
     secret-key: 'dnfjksdnfjeuijfnidsojviodsjfeiowrnfsadcsklMe23o4209dfidsdjnsefmdklwfowekfioewjsdkfnds'
     access-token-expiration: 360000
