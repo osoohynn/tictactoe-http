@@ -1,8 +1,6 @@
 package com.example.kotlinjwt.global.exception
 
-import org.springframework.http.HttpStatus
-
 interface CustomError {
-    val status: HttpStatus
+    val status: Int
     val message: String
 }

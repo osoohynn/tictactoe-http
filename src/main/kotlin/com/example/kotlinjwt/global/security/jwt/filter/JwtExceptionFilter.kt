@@ -28,7 +28,7 @@ class JwtExceptionFilter(
 
     private fun HttpServletResponse.sendError(exception: CustomException) {
         val error = exception.error
-        status = error.status.value()
+        status = error.status
 
         outputStream.use {
             it.write(objectMapper.writeValueAsBytes(ErrorResponse.of(exception)))
