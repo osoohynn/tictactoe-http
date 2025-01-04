@@ -1,7 +1,7 @@
 package com.example.kotlinjwt.domain.user.service
 
 import com.example.kotlinjwt.domain.user.dto.response.UserResponse
-import com.example.kotlinjwt.global.security.holder.SecurityHolder
+import com.example.kotlinjwt.global.security.SecurityHolder
 import org.springframework.stereotype.Service
 
 

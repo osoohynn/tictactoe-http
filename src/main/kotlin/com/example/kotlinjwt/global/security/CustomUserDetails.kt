@@ -1,4 +1,4 @@
-package com.example.kotlinjwt.global.security.details
+package com.example.kotlinjwt.global.security
 
 import com.example.kotlinjwt.domain.user.domain.entity.User
 import org.springframework.security.core.authority.SimpleGrantedAuthority

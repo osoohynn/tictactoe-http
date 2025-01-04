@@ -5,7 +5,7 @@ import com.example.kotlinjwt.domain.user.domain.entity.User
 import com.example.kotlinjwt.domain.user.error.UserError
 import com.example.kotlinjwt.domain.user.repository.UserRepository
 import com.example.kotlinjwt.global.exception.CustomException
-import com.example.kotlinjwt.global.security.details.CustomUserDetails
+import com.example.kotlinjwt.global.security.CustomUserDetails
 import com.example.kotlinjwt.global.security.jwt.config.JwtProperties
 import com.example.kotlinjwt.global.security.jwt.dto.JwtResponse
 import com.example.kotlinjwt.global.security.jwt.enums.JwtType

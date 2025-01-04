@@ -1,4 +1,4 @@
-package com.example.kotlinjwt.global.security.holder
+package com.example.kotlinjwt.global.security
 
 import com.example.kotlinjwt.domain.user.domain.entity.User
 import com.example.kotlinjwt.domain.user.error.UserError
