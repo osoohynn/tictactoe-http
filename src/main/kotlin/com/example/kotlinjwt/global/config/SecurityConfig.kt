@@ -1,4 +1,4 @@
-package com.example.kotlinjwt.global.config.security
+package com.example.kotlinjwt.global.config
 
 import com.example.kotlinjwt.global.security.jwt.filter.JwtAuthenticationFilter
 import com.example.kotlinjwt.global.security.jwt.filter.JwtExceptionFilter

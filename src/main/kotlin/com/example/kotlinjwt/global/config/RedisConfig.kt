@@ -1,4 +1,4 @@
-package com.example.kotlinjwt.global.config.redis
+package com.example.kotlinjwt.global.config
 
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties
 import org.springframework.context.annotation.Bean
