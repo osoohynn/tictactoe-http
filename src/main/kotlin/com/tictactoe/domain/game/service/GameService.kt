@@ -28,7 +28,7 @@ class GameService (
     private val moveRepository: MoveRepository
 ) {
     @Transactional
-    fun createGame(request: CreateGameRequest) {
+    fun createGame(request: CreateGameRequest): GameResponse {
         val user = securityHolder.user
 
         val game = Game(name = request.name, isStarted = false)
@@ -36,6 +36,7 @@ class GameService (
 
         val player = Player(user = user, mark = Mark.O, game = game, isReady = false)
         playerRepository.save(player)
+        return GameResponse.of(game, 1, listOf(PlayerResponse.of(player)))
     }
 
     @Transactional
@@ -129,10 +130,10 @@ class GameService (
             throw CustomException(GameError.NOT_YOUR_TURN)
         }
         // 이미 둔 자리 확인
-        if (pastMoves.any { it.row == row && it.col == col }) {
+        if (pastMoves.any { it.rowIdx == row && it.colIdx == col }) {
             throw CustomException(GameError.CELL_OCCUPIED)
         }
-        moveRepository.save(Move(game = game, row = row, col = col, mark = player.mark))
+        moveRepository.save(Move(game = game, rowIdx = row, colIdx = col, mark = player.mark))
     }
 
     /** 보드 상태, 승부 상태, 그리고 다음 차례 확인 */
@@ -142,7 +143,7 @@ class GameService (
             .orElseThrow { CustomException(GameError.GAME_NOT_FOUND) }
         val board = Board()
         val pastMoves = moveRepository.findByGameOrderByCreatedAtAsc(game)
-        pastMoves.forEach { board.placeMark(it.row, it.col, it.mark) }
+        pastMoves.forEach { board.placeMark(it.rowIdx, it.colIdx, it.mark) }
 
         val result = board.evaluate()
         // 다음 차례 결정 (게임 진행 중일 때만)

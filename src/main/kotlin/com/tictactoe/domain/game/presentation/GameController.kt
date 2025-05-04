@@ -18,8 +18,8 @@ class GameController (
     private val gameService: GameService
 ) {
     @PostMapping
-    fun createGame(@RequestBody req: CreateGameRequest) {
-        gameService.createGame(req)
+    fun createGame(@RequestBody req: CreateGameRequest): GameResponse {
+        return gameService.createGame(req)
     }
 
     /** 게임 참가 */
@@ -52,4 +52,9 @@ class GameController (
     @GetMapping("/{gameId}")
     fun getGameState(@PathVariable gameId: Long): GameStateResponse =
         gameService.getGameState(gameId)
+
+    @PostMapping("/{gameId}/leave")
+    fun leaveGame(@PathVariable gameId: Long) {
+        gameService.leaveGame(gameId)
+    }
 }

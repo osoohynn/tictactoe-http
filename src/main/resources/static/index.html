@@ -43,96 +43,177 @@
 
 <script>
     const API_BASE = 'http://localhost:8080';
-    let token = null;
+    // JWT Tokens
+    let accessToken = null;
+    let refreshToken = null;
 
-    function setToken(jwt) { token = jwt; localStorage.setItem('jwt', jwt); }
-    function loadToken() { token = localStorage.getItem('jwt'); }
+    // Login mode flag
+    let isLoginMode = true;
 
+    // DOM elements
+    const authContainer = document.getElementById('authContainer');
+    const lobbyContainer = document.getElementById('lobbyContainer');
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const authBtn = document.getElementById('authBtn');
+    const authTitle = document.getElementById('authTitle');
+    const authError = document.getElementById('authError');
+    const toggleLink = document.getElementById('toggleLink');
+    const toggleText = document.getElementById('toggleText');
+    const gameName = document.getElementById('gameName');
+    const createBtn = document.getElementById('createBtn');
+    const lobbyError = document.getElementById('lobbyError');
+    const gamesList = document.getElementById('gamesList');
+
+    // Token management
+    function setTokens(data) {
+        accessToken = data.accessToken;
+        refreshToken = data.refreshToken;
+        sessionStorage.setItem('accessToken', accessToken);
+        sessionStorage.setItem('refreshToken', refreshToken);
+    }
+    function loadTokens() {
+        accessToken = sessionStorage.getItem('accessToken');
+        refreshToken = sessionStorage.getItem('refreshToken');
+    }
+    function clearTokens() {
+        accessToken = refreshToken = null;
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+    }
+
+    // Fetch helper with auto-refresh
     async function handleResponse(res) {
-        const text = await res.text();
-        let data = null;
-        try { data = text ? JSON.parse(text) : null; } catch {};
+        const text = await res.text(); let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {}
         if (!res.ok) {
             const msg = (data && data.message) || res.statusText;
             throw { message: msg };
         }
         return data;
     }
+    async function refreshAccessToken() {
+        if (!refreshToken) throw new Error('리프레시 토큰이 없습니다');
+        const res = await fetch(`${API_BASE}/auth/reissue`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ refreshToken })
+        });
+        const data = await handleResponse(res);
+        setTokens(data);
+    }
+    async function fetchWithAuth(input, init={}) {
+        init.headers = init.headers || {};
+        if (accessToken) init.headers['Authorization'] = `Bearer ${accessToken}`;
+        let res = await fetch(input, init);
+        if (res.status === 401) {
+            try {
+                await refreshAccessToken();
+                init.headers['Authorization'] = `Bearer ${accessToken}`;
+                res = await fetch(input, init);
+            } catch(e) {
+                clearTokens();
+                alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+                window.location.reload();
+                throw e;
+            }
+        }
+        return res;
+    }
 
-    let isLoginMode = true;
-    document.getElementById('toggleLink').onclick = () => {
+    // Initial session check
+    loadTokens();
+    if (accessToken) {
+        authContainer.style.display = 'none';
+        lobbyContainer.style.display = 'block';
+        loadGames();
+    }
+
+    // Toggle login/signup UI
+    toggleLink.onclick = () => {
         isLoginMode = !isLoginMode;
-        document.getElementById('authTitle').textContent = isLoginMode ? '로그인' : '회원가입';
-        document.getElementById('authBtn').textContent = isLoginMode ? '로그인' : '회원가입';
-        document.getElementById('toggleText').textContent = isLoginMode ? '계정이 없으신가요?' : '이미 계정이 있으신가요?';
-        document.getElementById('authError').textContent = '';
+        authTitle.textContent = isLoginMode ? '로그인' : '회원가입';
+        authBtn.textContent = isLoginMode ? '로그인' : '회원가입';
+        toggleText.textContent = isLoginMode ? '계정이 없으신가요?' : '이미 계정이 있으신가요?';
+        authError.textContent = '';
     };
 
-    document.getElementById('authBtn').onclick = async () => {
-        const user = document.getElementById('username').value.trim();
-        const pass = document.getElementById('password').value.trim();
-        const ep = isLoginMode ? 'sign-in' : 'sign-up';
+    // Login / Signup action
+    authBtn.onclick = async () => {
+        const user = username.value.trim();
+        const pass = password.value.trim();
+
         try {
-            const res = await fetch(`${API_BASE}/auth/${ep}`, {
-                method:'POST', headers:{'Content-Type':'application/json'},
+            if (!isLoginMode) {
+                // 1) 회원가입
+                await handleResponse(
+                    await fetch(`${API_BASE}/auth/sign-up`, {
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ username:user, password:pass })
+                    })
+                );
+            }
+            // 2) 로그인 (토큰 발급)
+            const res  = await fetch(`${API_BASE}/auth/sign-in`, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ username:user, password:pass })
             });
             const data = await handleResponse(res);
-            setToken(data.accessToken);
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('lobbyContainer').style.display = 'block';
+            setTokens(data);
+            authContainer.style.display  = 'none';
+            lobbyContainer.style.display = 'block';
             loadGames();
         } catch(e) {
-            document.getElementById('authError').textContent = e.message;
+            authError.textContent = e.message;
         }
     };
-
-    document.getElementById('createBtn').onclick = async () => {
-        const name = document.getElementById('gameName').value.trim();
+    // Create game + immediate join
+    createBtn.onclick = async () => {
+        const name = gameName.value.trim();
         try {
-            await handleResponse(await fetch(`${API_BASE}/games`, {
-                method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-                body: JSON.stringify({ name })
-            }));
-            loadGames();
+            const game = await handleResponse(
+                await fetchWithAuth(`${API_BASE}/games`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ name })
+                })
+            );
+            window.location = `game.html?gameId=${game.id}`;
         } catch(e) {
-            document.getElementById('lobbyError').textContent = e.message;
+            lobbyError.textContent = e.message;
         }
     };
 
+    // Load all games
     async function loadGames() {
-        const list = document.getElementById('gamesList'); list.innerHTML = '';
+        gamesList.innerHTML = '';
         try {
-            const games = await handleResponse(await fetch(`${API_BASE}/games`, { headers:{ 'Authorization':`Bearer ${token}` } }));
-            if (games.length === 0) return;
+            const games = await handleResponse(
+                await fetchWithAuth(`${API_BASE}/games`)
+            );
             games.forEach(g => {
                 const li = document.createElement('li');
                 const info = document.createElement('span');
                 info.textContent = `${g.name} (${g.playerCount}/2)`;
-                const btn = document.createElement('button'); btn.textContent='참여';
+                const btn = document.createElement('button'); btn.textContent = '참여';
                 btn.onclick = async () => {
                     try {
-                        await handleResponse(await fetch(`${API_BASE}/games/${g.id}/join`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } }));
+                        await handleResponse(
+                            await fetchWithAuth(`${API_BASE}/games/${g.id}/join`, { method:'POST' })
+                        );
                         window.location = `game.html?gameId=${g.id}`;
-                    } catch (e) {
-                        document.getElementById('lobbyError').textContent = e.message;
+                    } catch(err) {
+                        lobbyError.textContent = err.message;
                     }
                 };
                 li.appendChild(info);
                 li.appendChild(btn);
-                list.appendChild(li);
+                gamesList.appendChild(li);
             });
         } catch(e) {
-            document.getElementById('lobbyError').textContent = e.message;
+            lobbyError.textContent = e.message;
         }
-    }
-
-    // 초기 세션 체크
-    loadToken();
-    if (token) {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('lobbyContainer').style.display = 'block';
-        loadGames();
     }
 </script>
 </body>
+</html>

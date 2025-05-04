@@ -14,8 +14,8 @@ class Move(
     @JoinColumn(name = "game_id")
     val game: Game,
 
-    val row: Int,
-    val col: Int,
+    val rowIdx: Int,
+    val colIdx: Int,
 
     @Enumerated(EnumType.STRING)
     val mark: Mark

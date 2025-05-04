@@ -24,67 +24,112 @@
     <div class="error" id="errorMsg"></div>
     <div class="controls">
         <button id="readyBtn">준비 완료</button>
-        <button id="startBtn">게임 시작</button>
+        <button id="leaveBtn">게임 나가기</button>
     </div>
     <p id="status">대기 중...</p>
     <table id="board"></table>
 </div>
 <script>
     const API_BASE = 'http://localhost:8080';
-    const token = localStorage.getItem('jwt');
+    const token = sessionStorage.getItem('accessToken');
     const params = new URLSearchParams(location.search);
     const gameId = params.get('gameId');
     const api = `${API_BASE}/games/${gameId}`;
 
+    // DOM 요소 모아두기
+    const readyBtn   = document.getElementById('readyBtn');
+    const leaveBtn   = document.getElementById('leaveBtn');
+    const errorMsg   = document.getElementById('errorMsg');
+    const statusEl   = document.getElementById('status');
+    const boardEl    = document.getElementById('board');
+    const gameNameEl = document.getElementById('gameName');
+
+    // 응답 파싱 헬퍼
     async function handleResponse(res) {
-        const text = await res.text(); let data = null;
-        try { data = text ? JSON.parse(text) : null; } catch {};
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {}
         if (!res.ok) throw { message: (data && data.message) || res.statusText };
         return data;
     }
 
+    // 인증 헤더 자동 첨부 헬퍼
+    async function fetchWithAuth(input, init = {}) {
+        init.headers = init.headers || {};
+        if (token) init.headers['Authorization'] = `Bearer ${token}`;
+        let res = await fetch(input, init);
+        if (res.status === 401) throw { message: '권한이 없습니다.' };
+        return res;
+    }
+
+    // 보드와 상태를 화면에 렌더
     async function updateState() {
         try {
-            const state = await handleResponse(await fetch(api, { headers:{ 'Authorization':`Bearer ${token}` } }));
-            document.getElementById('status').textContent = state.result === 'IN_PROGRESS' ? `차례: ${state.nextTurn}`
-                : state.result === 'DRAW' ? '무승부!' : `${state.result} 승리!`;
-            const boardEl = document.getElementById('board'); boardEl.innerHTML = '';
-            state.board.forEach((row,r) => {
+            const state = await handleResponse(await fetchWithAuth(api));
+            gameNameEl.textContent = state.name || `게임 #${gameId}`;
+            statusEl.textContent =
+                state.result === 'IN_PROGRESS' ? `차례: ${state.nextTurn}` :
+                    state.result === 'DRAW'        ? '무승부!' :
+                        `${state.result} 승리!`;
+
+            boardEl.innerHTML = '';
+            state.board.forEach((row, r) => {
                 const tr = document.createElement('tr');
-                row.forEach((cell,c) => {
+                row.forEach((cell, c) => {
                     const td = document.createElement('td');
                     const btn = document.createElement('button');
-                    if (cell !== 'EMPTY') { btn.textContent = cell; btn.className = cell.toLowerCase() + '-mark'; }
+                    if (cell !== 'EMPTY') {
+                        btn.textContent = cell;
+                        btn.className = cell.toLowerCase() + '-mark';
+                    }
                     btn.disabled = cell !== 'EMPTY' || state.result !== 'IN_PROGRESS';
                     btn.onclick = async () => {
                         try {
-                            await handleResponse(await fetch(`${api}/move`, {
-                                method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${token}` },
-                                body: JSON.stringify({ row:r, col:c })
-                            }));
+                            await handleResponse(
+                                await fetchWithAuth(`${api}/move`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type':'application/json' },
+                                    body: JSON.stringify({ row: r, col: c })
+                                })
+                            );
                             updateState();
                         } catch(e) {
-                            document.getElementById('errorMsg').textContent = e.message;
+                            errorMsg.textContent = e.message;
                         }
                     };
-                    td.appendChild(btn); tr.appendChild(td);
-                }); boardEl.appendChild(tr);
+                    td.appendChild(btn);
+                    tr.appendChild(td);
+                });
+                boardEl.appendChild(tr);
             });
         } catch(e) {
-            document.getElementById('errorMsg').textContent = e.message;
+            errorMsg.textContent = e.message;
         }
     }
 
-    document.getElementById('readyBtn').onclick = async () => {
-        await fetch(`${api}/ready`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } });
-        updateState();
-    };
-    document.getElementById('startBtn').onclick = async () => {
-        await fetch(`${api}/start`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } });
-        updateState();
+    // 준비 버튼: 누르면 서버에 ready 요청, 서버에서 양쪽 준비 완료 시 자동으로 isStarted=true
+    readyBtn.onclick = async () => {
+        try {
+            await handleResponse(await fetchWithAuth(`${api}/start`, { method: 'POST' }));
+            updateState();
+        } catch(e) {
+            errorMsg.textContent = e.message;
+        }
     };
 
-    updateState(); setInterval(updateState,2000);
+    // 나가기 버튼
+    leaveBtn.onclick = async () => {
+        try {
+            await handleResponse(await fetchWithAuth(`${API_BASE}/games/${gameId}/leave`, { method: 'POST' }));
+            window.location = 'index.html';
+        } catch(e) {
+            errorMsg.textContent = e.message;
+        }
+    };
+
+    // 주기적으로 상태 갱신
+    updateState();
+    setInterval(updateState, 2000);
 </script>
 </body>
 </html>
