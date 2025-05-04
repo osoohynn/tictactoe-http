@@ -6,6 +6,7 @@ import com.tictactoe.global.common.BaseEntity
 import jakarta.persistence.*
 
 @Entity
+@Table(name = "players")
 class Player (
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
@@ -20,4 +21,6 @@ class Player (
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id")
     val game: Game,
+
+    var isReady: Boolean,
 ) : BaseEntity()
