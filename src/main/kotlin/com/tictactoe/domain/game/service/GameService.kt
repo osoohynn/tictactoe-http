@@ -96,7 +96,7 @@ class GameService (
         player.isReady = true
         playerRepository.save(player)
 
-        // 모든 플레이어가 준비됐는지 확인 (2명 기준)
+        // 모든 플레이어가 준비됐는지 확인
         val readyCount = playerRepository.findByGame(game).count { it.isReady }
         if (readyCount >= 2) {
             game.isStarted = true
@@ -146,7 +146,6 @@ class GameService (
         pastMoves.forEach { board.placeMark(it.rowIdx, it.colIdx, it.mark) }
 
         val result = board.evaluate()
-        // 다음 차례 결정 (게임 진행 중일 때만)
         val nextTurn = when {
             result != GameResult.IN_PROGRESS -> Mark.EMPTY
             pastMoves.lastOrNull()?.mark == Mark.X -> Mark.O

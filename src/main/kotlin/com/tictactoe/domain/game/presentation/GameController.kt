@@ -28,7 +28,7 @@ class GameController (
         gameService.joinGame(gameId)
     }
 
-    /** 레디 상태, 게임 시작 */
+    /** 게임 준비 */
     @PostMapping("/{gameId}/start")
     fun startGame(@PathVariable gameId: Long) {
         gameService.startGame(gameId)
