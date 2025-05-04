@@ -25,7 +25,7 @@ class GameService (
     fun createGame(request: CreateGameRequest) {
         val user = securityHolder.user
 
-        val game = Game(name = request.name)
+        val game = Game(name = request.name, isStarted = false)
         gameRepository.save(game)
 
         val player = Player(user = user, mark = Mark.O, game = game)
@@ -54,6 +54,7 @@ class GameService (
     fun leaveGame(gameId: Long) {
         val user = securityHolder.user
         val game = gameRepository.findByIdOrNull(gameId) ?: throw CustomException(GameError.GAME_NOT_FOUND)
+        if (game.isStarted) throw CustomException(GameError.GAME_ALREADY_STARTED)
         val player = playerRepository.findByGame(game)
         player.forEach{if (it.user.id == user.id) playerRepository.delete(it)}
     }

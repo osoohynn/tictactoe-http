@@ -12,4 +12,6 @@ class Game (
     val id: Long? = null,
 
     val name: String,
+
+    val isStarted: Boolean,
 ) : BaseEntity()
