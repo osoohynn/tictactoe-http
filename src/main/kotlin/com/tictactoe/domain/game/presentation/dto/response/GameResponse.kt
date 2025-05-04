@@ -7,6 +7,7 @@ data class GameResponse (
     val name: String,
     val playerCount: Long,
     val players: List<PlayerResponse>,
+    val isStarted: Boolean,
 ) {
     companion object {
         fun of(game: Game, playerCount: Long, players: List<PlayerResponse>): GameResponse {
@@ -14,7 +15,8 @@ data class GameResponse (
                 id = game.id!!,
                 name = game.name,
                 playerCount = playerCount,
-                players = players
+                players = players,
+                isStarted = game.isStarted
             )
         }
     }

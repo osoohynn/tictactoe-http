@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>틱택토 게임</title>
+    <style>
+        body { font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); margin:0; padding:20px; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+        .container { background:#fff; padding:32px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15); text-align:center; }
+        #board { border-collapse:collapse; margin:16px auto; }
+        td { width:80px; height:80px; border:2px solid #374151; }
+        td button { width:100%; height:100%; font-size:34px; background:none; border:none; cursor:pointer; }
+        td button.x-mark { color:#4361ee; }
+        td button.o-mark { color:#ef4444; }
+        td button:disabled { cursor:not-allowed; }
+        .controls { margin-bottom:16px; }
+        .controls button { margin:0 8px; }
+        #status { font-size:18px; color:#4b5563; margin-bottom:16px; }
+        .error { color:#ef4444; margin-bottom:16px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 id="gameName">틱택토</h1>
+    <div class="error" id="errorMsg"></div>
+    <div class="controls">
+        <button id="readyBtn">준비 완료</button>
+        <button id="startBtn">게임 시작</button>
+    </div>
+    <p id="status">대기 중...</p>
+    <table id="board"></table>
+</div>
+<script>
+    const API_BASE = 'http://localhost:8080';
+    const token = localStorage.getItem('jwt');
+    const params = new URLSearchParams(location.search);
+    const gameId = params.get('gameId');
+    const api = `${API_BASE}/games/${gameId}`;
+
+    async function handleResponse(res) {
+        const text = await res.text(); let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {};
+        if (!res.ok) throw { message: (data && data.message) || res.statusText };
+        return data;
+    }
+
+    async function updateState() {
+        try {
+            const state = await handleResponse(await fetch(api, { headers:{ 'Authorization':`Bearer ${token}` } }));
+            document.getElementById('status').textContent = state.result === 'IN_PROGRESS' ? `차례: ${state.nextTurn}`
+                : state.result === 'DRAW' ? '무승부!' : `${state.result} 승리!`;
+            const boardEl = document.getElementById('board'); boardEl.innerHTML = '';
+            state.board.forEach((row,r) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell,c) => {
+                    const td = document.createElement('td');
+                    const btn = document.createElement('button');
+                    if (cell !== 'EMPTY') { btn.textContent = cell; btn.className = cell.toLowerCase() + '-mark'; }
+                    btn.disabled = cell !== 'EMPTY' || state.result !== 'IN_PROGRESS';
+                    btn.onclick = async () => {
+                        try {
+                            await handleResponse(await fetch(`${api}/move`, {
+                                method:'POST', headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${token}` },
+                                body: JSON.stringify({ row:r, col:c })
+                            }));
+                            updateState();
+                        } catch(e) {
+                            document.getElementById('errorMsg').textContent = e.message;
+                        }
+                    };
+                    td.appendChild(btn); tr.appendChild(td);
+                }); boardEl.appendChild(tr);
+            });
+        } catch(e) {
+            document.getElementById('errorMsg').textContent = e.message;
+        }
+    }
+
+    document.getElementById('readyBtn').onclick = async () => {
+        await fetch(`${api}/ready`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } });
+        updateState();
+    };
+    document.getElementById('startBtn').onclick = async () => {
+        await fetch(`${api}/start`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } });
+        updateState();
+    };
+
+    updateState(); setInterval(updateState,2000);
+</script>
+</body>
+</html>

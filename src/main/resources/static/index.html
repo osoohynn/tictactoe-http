@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>틱택토</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); margin:0; padding:0; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .container { background:#fff; padding:32px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15); width:360px; }
+        h1 { text-align:center; color:#333; margin-bottom:24px; font-size:28px; }
+        input { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:6px; font-size:16px; }
+        button { width:100%; padding:12px; margin:12px 0; border:none; border-radius:6px; background:#4361ee; color:#fff; font-size:16px; cursor:pointer; }
+        button:hover { background:#3a56d4; }
+        .error { color:#ef4444; text-align:center; margin:12px 0; }
+        .link { text-align:center; margin-top:8px; font-size:14px; }
+        .link a { color:#4361ee; text-decoration:none; }
+        ul { list-style:none; padding:0; margin:16px 0; max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:6px; }
+        ul:empty { display:flex; align-items:center; justify-content:center; height:100px; color:#9ca3af; font-style:italic; }
+        li { display:flex; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee; }
+        li:last-child { border-bottom:none; }
+        li button { width:auto; padding:6px 12px; font-size:14px; }
+    </style>
+</head>
+<body>
+<div class="container" id="authContainer">
+    <h1 id="authTitle">로그인</h1>
+    <div class="error" id="authError"></div>
+    <input id="username" type="text" placeholder="사용자 이름" />
+    <input id="password" type="password" placeholder="비밀번호" />
+    <button id="authBtn">로그인</button>
+    <div class="link">
+        <span id="toggleText">계정이 없으신가요?</span>
+        <a href="#" id="toggleLink">회원가입</a>
+    </div>
+</div>
+
+<div class="container" id="lobbyContainer" style="display:none;">
+    <h1>게임 로비</h1>
+    <div class="error" id="lobbyError"></div>
+    <input id="gameName" type="text" placeholder="새 게임 이름" />
+    <button id="createBtn">게임 만들기</button>
+    <ul id="gamesList"></ul>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080';
+    let token = null;
+
+    function setToken(jwt) { token = jwt; localStorage.setItem('jwt', jwt); }
+    function loadToken() { token = localStorage.getItem('jwt'); }
+
+    async function handleResponse(res) {
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {};
+        if (!res.ok) {
+            const msg = (data && data.message) || res.statusText;
+            throw { message: msg };
+        }
+        return data;
+    }
+
+    let isLoginMode = true;
+    document.getElementById('toggleLink').onclick = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('authTitle').textContent = isLoginMode ? '로그인' : '회원가입';
+        document.getElementById('authBtn').textContent = isLoginMode ? '로그인' : '회원가입';
+        document.getElementById('toggleText').textContent = isLoginMode ? '계정이 없으신가요?' : '이미 계정이 있으신가요?';
+        document.getElementById('authError').textContent = '';
+    };
+
+    document.getElementById('authBtn').onclick = async () => {
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
+        const ep = isLoginMode ? 'sign-in' : 'sign-up';
+        try {
+            const res = await fetch(`${API_BASE}/auth/${ep}`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ username:user, password:pass })
+            });
+            const data = await handleResponse(res);
+            setToken(data.accessToken);
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('lobbyContainer').style.display = 'block';
+            loadGames();
+        } catch(e) {
+            document.getElementById('authError').textContent = e.message;
+        }
+    };
+
+    document.getElementById('createBtn').onclick = async () => {
+        const name = document.getElementById('gameName').value.trim();
+        try {
+            await handleResponse(await fetch(`${API_BASE}/games`, {
+                method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body: JSON.stringify({ name })
+            }));
+            loadGames();
+        } catch(e) {
+            document.getElementById('lobbyError').textContent = e.message;
+        }
+    };
+
+    async function loadGames() {
+        const list = document.getElementById('gamesList'); list.innerHTML = '';
+        try {
+            const games = await handleResponse(await fetch(`${API_BASE}/games`, { headers:{ 'Authorization':`Bearer ${token}` } }));
+            if (games.length === 0) return;
+            games.forEach(g => {
+                const li = document.createElement('li');
+                const info = document.createElement('span');
+                info.textContent = `${g.name} (${g.playerCount}/2)`;
+                const btn = document.createElement('button'); btn.textContent='참여';
+                btn.onclick = async () => {
+                    try {
+                        await handleResponse(await fetch(`${API_BASE}/games/${g.id}/join`, { method:'POST', headers:{ 'Authorization':`Bearer ${token}` } }));
+                        window.location = `game.html?gameId=${g.id}`;
+                    } catch (e) {
+                        document.getElementById('lobbyError').textContent = e.message;
+                    }
+                };
+                li.appendChild(info);
+                li.appendChild(btn);
+                list.appendChild(li);
+            });
+        } catch(e) {
+            document.getElementById('lobbyError').textContent = e.message;
+        }
+    }
+
+    // 초기 세션 체크
+    loadToken();
+    if (token) {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('lobbyContainer').style.display = 'block';
+        loadGames();
+    }
+</script>
+</body>
